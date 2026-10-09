@@ -20,15 +20,16 @@ jobs:
       - name: نصب Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.11"
 
-      - name: نصب کتابخانه‌ها
+      - name: نصب Playwright
         run: |
-          pip install requests beautifulsoup4
+          pip install playwright
+          playwright install chromium
+          playwright install-deps chromium
 
-      - name: بروزرسانی قیمت‌ها
-        run: |
-          python update_prices.py
+      - name: دریافت قیمت‌ها
+        run: python update_prices.py
 
       - name: ذخیره قیمت‌های جدید
         run: |
