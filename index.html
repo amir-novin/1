@@ -2,8 +2,9 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>قیمت طلا و سکه</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>قیمت لحظه‌ای طلا</title>
 
   <style>
     * {
@@ -13,20 +14,21 @@
 
     body {
       margin: 0;
-      background: #f5f6fa;
+      background: #f4f5f7;
       color: #222;
     }
 
     header {
-      background: linear-gradient(135deg, #b8860b, #f5c542);
+      background: linear-gradient(135deg, #b8860b, #f2c94c);
       color: white;
-      padding: 30px 15px;
       text-align: center;
+      padding: 35px 15px;
+      box-shadow: 0 3px 10px #0002;
     }
 
     header h1 {
-      margin: 0 0 10px;
-      font-size: 26px;
+      margin: 0;
+      font-size: 28px;
     }
 
     .container {
@@ -35,10 +37,11 @@
       padding: 0 15px;
     }
 
-    .info {
+    #updated {
       text-align: center;
-      color: #666;
-      margin-bottom: 20px;
+      color: #777;
+      margin-bottom: 25px;
+      font-size: 14px;
     }
 
     .grid {
@@ -49,16 +52,21 @@
 
     .card {
       background: white;
-      border-radius: 15px;
-      padding: 22px;
-      box-shadow: 0 5px 18px #00000012;
+      padding: 24px;
+      border-radius: 16px;
       border-right: 5px solid #d4a017;
+      box-shadow: 0 5px 18px #00000012;
+      transition: 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
     }
 
     .card h2 {
-      margin: 0 0 15px;
-      font-size: 18px;
+      margin: 0 0 18px;
       color: #8a6500;
+      font-size: 18px;
     }
 
     .price {
@@ -68,86 +76,102 @@
     }
 
     .unit {
+      margin-top: 8px;
       color: #777;
       font-size: 13px;
-      margin-top: 8px;
+    }
+
+    .message {
+      background: #fff3cd;
+      color: #856404;
+      padding: 18px;
+      border-radius: 10px;
+      text-align: center;
     }
 
     footer {
       text-align: center;
-      margin: 35px 0 20px;
       color: #777;
       font-size: 13px;
-    }
-
-    .error {
-      background: #ffe5e5;
-      color: #a00000;
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
+      margin: 40px 0 20px;
     }
   </style>
 </head>
 
 <body>
 
-<header>
-  <h1>قیمت لحظه‌ای طلا و سکه</h1>
-  <div>منبع اطلاعات: tala.ir</div>
-</header>
+  <header>
+    <h1>قیمت لحظه‌ای طلا</h1>
+  </header>
 
-<div class="container">
-  <div class="info" id="updated">در حال دریافت اطلاعات...</div>
-  <div class="grid" id="prices"></div>
-</div>
+  <main class="container">
+    <div id="updated">در حال دریافت قیمت‌ها...</div>
+    <div id="prices" class="grid"></div>
+  </main>
 
-<footer>
- توسعه داده شده توسط امیر مهدی نوین 
+  <footer>
+    توسعه داده شده توسط امیر مهدی نوین
+  </footer>
 
-<script>
-  async function loadPrices() {
+  <script>
     const pricesBox = document.getElementById("prices");
     const updatedBox = document.getElementById("updated");
 
-    try {
-      const response = await fetch("data.json?time=" + Date.now());
+    function formatPrice(price) {
+      return Number(price).toLocaleString("fa-IR");
+    }
 
-      if (!response.ok) {
-        throw new Error("خطا در دریافت اطلاعات");
-      }
+    async function loadPrices() {
+      try {
+        const response = await fetch("data.json?time=" + Date.now());
 
-      const data = await response.json();
+        if (!response.ok) {
+          throw new Error("خطا در دریافت اطلاعات");
+        }
 
-      updatedBox.textContent =
-        "آخرین بروزرسانی: " + (data.updated_at || "نامشخص");
+        const data = await response.json();
 
-      pricesBox.innerHTML = "";
+        updatedBox.textContent =
+          "آخرین بروزرسانی: " + (data.updated_at || "نامشخص");
 
-      data.prices.forEach(item => {
-        pricesBox.innerHTML += `
-          <div class="card">
-            <h2>${item.title}</h2>
-            <div class="price">${item.price}</div>
-            <div class="unit">${item.unit || "تومان"}</div>
+        pricesBox.innerHTML = "";
+
+        data.prices.forEach(item => {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          const title = document.createElement("h2");
+          title.textContent = item.title;
+
+          const price = document.createElement("div");
+          price.className = "price";
+          price.textContent = formatPrice(item.price);
+
+          const unit = document.createElement("div");
+          unit.className = "unit";
+          unit.textContent = item.unit;
+
+          card.appendChild(title);
+          card.appendChild(price);
+          card.appendChild(unit);
+
+          pricesBox.appendChild(card);
+        });
+
+      } catch (error) {
+        pricesBox.innerHTML = `
+          <div class="message">
+            دریافت قیمت‌ها با خطا مواجه شد.
           </div>
         `;
-      });
-
-    } catch (error) {
-      pricesBox.innerHTML = `
-        <div class="error">
-          دریافت قیمت‌ها با خطا مواجه شد.
-        </div>
-      `;
+      }
     }
-  }
 
-  loadPrices();
+    loadPrices();
 
-  // بروزرسانی هر ۵ دقیقه
-  setInterval(loadPrices, 300000);
-</script>
+    // بروزرسانی نمایش اطلاعات هر ۵ دقیقه
+    setInterval(loadPrices, 300000);
+  </script>
 
 </body>
 </html>
