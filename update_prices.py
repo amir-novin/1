@@ -1,25 +1,30 @@
 import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
 from playwright.sync_api import sync_playwright
 
 
-def تبدیل_عدد(text):
-    جدول = str.maketrans(
+URL = "https://www.tala.ir/"
+
+
+def normalize_number(text):
+    table = str.maketrans(
         "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩",
         "01234567890123456789"
     )
 
-    text = text.translate(جدول)
+    text = text.translate(table)
     text = text.replace(",", "")
     text = text.replace("٬", "")
+    text = text.replace(" ", "")
     text = text.strip()
 
     return int(text)
 
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
+with sync_playwright() as playwright:
+    browser = playwright.chromium.launch(headless=True)
 
     page = browser.new_page(
         viewport={"width": 1400, "height": 1000},
@@ -27,47 +32,53 @@ with sync_playwright() as p:
     )
 
     page.goto(
-        "https://www.tala.ir/",
-        wait_until="networkidle",
+        URL,
+        wait_until="domcontentloaded",
         timeout=60000
     )
 
-    # صبر برای نمایش قیمت‌ها
-    page.wait_for_timeout(5000)
+    page.wait_for_timeout(7000)
 
-    قیمت‌ها = page.locator("span.price.green").all_inner_texts()
+    price_texts = page.locator("span.price.green").all_inner_texts()
 
     browser.close()
 
 
-if len(قیمت‌ها) < 2:
-    raise Exception("قیمت طلا و سکه پیدا نشد. تعداد قیمت‌ها: " + str(len(قیمت‌ها)))
+print("Prices found:", price_texts)
+
+if len(price_texts) < 2:
+    raise Exception(
+        "Gold and coin prices were not found. "
+        "Number of prices: " + str(len(price_texts))
+    )
 
 
-قیمت_طلا = تبدیل_عدد(قیمت‌ها[0])
-قیمت_سکه = تبدیل_عدد(قیمت‌ها[1])
+gold_price = normalize_number(price_texts[0])
+coin_price = normalize_number(price_texts[1])
 
-اطلاعات = {
+data = {
     "updated_at": datetime.now(
         ZoneInfo("Asia/Tehran")
     ).strftime("%Y/%m/%d - %H:%M"),
 
     "prices": [
         {
-            "title": "طلای ۱۸ عیار",
-            "price": قیمت_طلا,
+            "title": "طلای 18 عیار",
+            "price": gold_price,
             "unit": "تومان / گرم"
         },
         {
             "title": "سکه امامی",
-            "price": قیمت_سکه,
+            "price": coin_price,
             "unit": "تومان"
         }
     ]
 }
 
-with open("data.json", "w", encoding="utf-8") as file:
-    json.dump(اطلاعات, file, ensure_ascii=False, indent=2)
 
-print("قیمت طلا:", قیمت_طلا)
-print("قیمت سکه:", قیمت_سکه)
+with open("data.json", "w", encoding="utf-8") as file:
+    json.dump(data, file, ensure_ascii=False, indent=2)
+
+print("Gold price:", gold_price)
+print("Coin price:", coin_price)
+print("data.json updated successfully")
